@@ -17,6 +17,7 @@ parser = argparse.ArgumentParser(description='process dataset')
 
 # General configs
 parser.add_argument('--dataname', type=str, default=None, help='Name of dataset.')
+parser.add_argument('--num_as_int', type=bool, default=False, help='Save Numeric Columns as Int Rather than Float')
 args = parser.parse_args()
 
 def preprocess_beijing():
@@ -145,7 +146,7 @@ def train_val_test_split(data_df, cat_columns, num_train = 0, num_test = 0):
     return train_df, test_df, seed    
 
 
-def process_data(name):
+def process_data(name, num_as_int = False):
 
     if name == 'news':
         preprocess_news()
@@ -247,13 +248,18 @@ def process_data(name):
         test_df.loc[test_df[col] == '?', col] = 'nan'
 
 
-    
-    X_num_train = train_df[num_columns].to_numpy().astype(np.float32)
+    if num_as_int:
+        X_num_train = train_df[num_columns].to_numpy().astype(int)
+    else: 
+        X_num_train = train_df[num_columns].to_numpy().astype(np.float32)
     X_cat_train = train_df[cat_columns].to_numpy()
     y_train = train_df[target_columns].to_numpy()
 
 
-    X_num_test = test_df[num_columns].to_numpy().astype(np.float32)
+    if num_as_int:
+        X_num_test = test_df[num_columns].to_numpy().astype(int)
+    else:
+        X_num_test = test_df[num_columns].to_numpy().astype(np.float32)
     X_cat_test = test_df[cat_columns].to_numpy()
     y_test = test_df[target_columns].to_numpy()
 
@@ -267,8 +273,12 @@ def process_data(name):
     np.save(f'{save_dir}/X_cat_test.npy', X_cat_test)
     np.save(f'{save_dir}/y_test.npy', y_test)
 
-    train_df[num_columns] = train_df[num_columns].astype(np.float32)
-    test_df[num_columns] = test_df[num_columns].astype(np.float32)
+    if num_as_int:
+        train_df[num_columns] = train_df[num_columns].astype(int)
+        test_df[num_columns] = test_df[num_columns].astype(int)
+    else:
+        train_df[num_columns] = train_df[num_columns].astype(np.float32)
+        test_df[num_columns] = test_df[num_columns].astype(np.float32)
 
 
     train_df.to_csv(f'{save_dir}/train.csv', index = False)
@@ -300,7 +310,10 @@ def process_data(name):
     for i in num_col_idx:
         metadata['columns'][i] = {}
         metadata['columns'][i]['sdtype'] = 'numerical'
-        metadata['columns'][i]['computer_representation'] = 'Float'
+        if num_as_int:
+            metadata['columns'][i]['computer_representation'] = 'Int'
+        else:
+            metadata['columns'][i]['computer_representation'] = 'Float'
 
     for i in cat_col_idx:
         metadata['columns'][i] = {}
@@ -312,7 +325,10 @@ def process_data(name):
         for i in target_col_idx:
             metadata['columns'][i] = {}
             metadata['columns'][i]['sdtype'] = 'numerical'
-            metadata['columns'][i]['computer_representation'] = 'Float'
+            if num_as_int:
+                metadata['columns'][i]['computer_representation'] = 'Int'
+            else:
+                metadata['columns'][i]['computer_representation'] = 'Float'
 
     else:
         for i in target_col_idx:
